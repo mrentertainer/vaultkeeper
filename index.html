@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="VaultKeeper">
 <meta name="theme-color" content="#08080f">
-<title>VaultKeeper 5.0</title>
+<title>VaultKeeper 5.1</title>
 
 <!-- Inline PWA Manifest — works when hosted on HTTPS (GitHub Pages) -->
 <link rel="manifest" href="data:application/manifest+json,{
@@ -192,7 +192,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 <!-- ══ LOCK SCREEN ══ -->
 <div id="sLock" class="screen active">
   <div class="topbar">
-    <span class="logo-txt">🔐 VaultKeeper <span class="ver">5.0</span></span>
+    <span class="logo-txt">🔐 VaultKeeper <span class="ver">5.1</span></span>
   </div>
 
   <!-- Install hint when not on HTTPS -->
@@ -560,7 +560,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 
 <script>
 'use strict';
-// VaultKeeper 5.0 — Android PWA
+// VaultKeeper 5.1 — Android PWA
 const STORE_KEY='vk3_vaults', SYNC_KEY='vk6_syncUrl';
 let KEY=null, DB=[], viewingId=null;
 
@@ -633,7 +633,47 @@ async function syncPush(url,showFb=true){
   }catch{showSyncBar('Upload failed — check URL','err');}
 }
 
-async function syncPull(url,showFb=true){
+async function syncBidirectional(url,showFb=true){
+  if(!url||!KEY) return;
+  if(showFb) showSyncBar('Syncing with Drive…');
+  try{
+    const r=await fetch(url);
+    const raw=(await r.text()).trim();
+    if(!raw||raw.startsWith('ERROR')){
+      // Drive empty — push our vault
+      syncPush(url,false);
+      if(showFb) showSyncBar('Pushed to Drive ✅','ok');
+      return;
+    }
+    const rv=JSON.parse(raw);
+    if(!rv.salt||!rv.data) throw new Error('Invalid');
+    const localVault=loadVault();
+    let decryptKey=KEY;
+    if(rv.salt!==localVault?.salt){
+      const rawPw=sessionStorage.getItem('vk_pw');
+      if(!rawPw){showSyncBar('Re-lock and unlock to sync','err');return;}
+      decryptKey=await deriveKey(rawPw,unb64(rv.salt));
+    }
+    const plain=await aesDec(decryptKey,rv.data.iv,rv.data.ct);
+    const remoteDB=JSON.parse(plain);
+    let changed=0;
+    for(const re of remoteDB){
+      const li=DB.findIndex(e=>e.id===re.id);
+      if(li<0){DB.push(re);changed++;}
+      else if((re.modified||0)>(DB[li].modified||0)){DB[li]=re;changed++;}
+    }
+    if(changed>0){await persistDB();renderList();}
+    // Always push merged result back to Drive
+    const merged=loadVault();
+    const pr=await fetch(url,{method:'POST',body:JSON.stringify(merged),headers:{'Content-Type':'text/plain'}});
+    const pt=await pr.text();
+    if(pt.trim()==='OK'){
+      showSyncBar(changed>0?`Synced — ${changed} update(s) ✅`:'Already up to date ✅','ok');
+    } else showSyncBar('Pull ok but push failed','err');
+  }catch(e){showSyncBar('Sync error: '+e.message,'err');}
+}
+async function syncPull(url,showFb=true){ return syncBidirectional(url,showFb); }
+async function _syncPullOld(url,showFb=true){
   if(!url||!KEY) return;
   if(showFb) showSyncBar('Downloading from Drive…');
   try{
@@ -697,10 +737,11 @@ async function doUnlock(){
     DB=[];
     const enc=await aesEnc(KEY,'[]');
     saveVaultData({id:crypto.randomUUID(),name:'Mobile Vault',createdAt:Date.now(),entryCount:0,salt:b64(salt),data:enc});
+    sessionStorage.setItem('vk_pw',pw);
     document.getElementById('inUnlock').value='';
     showScreen('sApp'); renderList();
     const url=getSyncUrl();
-    if(url) setTimeout(()=>syncPull(url,true),400);
+    if(url) setTimeout(()=>syncBidirectional(url,true),400);
     return;
   }
 
@@ -709,10 +750,11 @@ async function doUnlock(){
     await aesDec(key,vault.data.iv,vault.data.ct); // verify
     const plain=await aesDec(key,vault.data.iv,vault.data.ct);
     DB=JSON.parse(plain); KEY=key;
+    sessionStorage.setItem('vk_pw',pw);
     document.getElementById('inUnlock').value='';
     showScreen('sApp'); renderList();
     const url=getSyncUrl();
-    if(url) setTimeout(()=>syncPull(url,false),400);
+    if(url) setTimeout(()=>syncBidirectional(url,false),400);
   }catch{
     const e=document.getElementById('errUnlock');
     e.textContent='Wrong password. Try again.'; e.classList.add('on');
@@ -1015,7 +1057,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       else{document.getElementById('sDot').className='sdot err';document.getElementById('sStatusTxt').textContent='Connection failed';}
     }catch{document.getElementById('sDot').className='sdot err';document.getElementById('sStatusTxt').textContent='Connection failed';}
   });
-  document.getElementById('btnPullSync').addEventListener('click',()=>{const url=getSyncUrl();if(url){closeSheet('shSync');syncPull(url,true);}else toast('No sync URL set yet','err');});
+  document.getElementById('btnPullSync').addEventListener('click',()=>{const url=getSyncUrl();if(url){closeSheet('shSync');syncBidirectional(url,true);}else toast('No sync URL set yet','err');});
   document.getElementById('btnPushSync').addEventListener('click',()=>{const url=getSyncUrl();if(url){closeSheet('shSync');syncPush(url,true);}else toast('No sync URL set yet','err');});
   document.getElementById('btnClearSync').addEventListener('click',()=>{setSyncUrl('');updateSyncUI();toast('Sync removed','ok');});
 
