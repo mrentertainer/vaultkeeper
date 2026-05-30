@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="VaultKeeper">
 <meta name="theme-color" content="#08080f">
-<title>VaultKeeper 5.1</title>
+<title>VaultKeeper 5.3</title>
 
 <!-- Inline PWA Manifest — works when hosted on HTTPS (GitHub Pages) -->
 <link rel="manifest" href="data:application/manifest+json,{
@@ -82,7 +82,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 
 /* lock screen */
 .lock-body{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;padding:24px;gap:6px;overflow-y:auto;}
-.big-icon{width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:44px;margin-bottom:16px;box-shadow:0 0 48px rgba(124,106,255,.4);flex-shrink:0;}
+.big-icon-emoji{font-size:72px;margin-bottom:16px;text-align:center;display:block;filter:drop-shadow(0 0 20px rgba(124,106,255,.5));flex-shrink:0;}
 
 /* install banner */
 .install-banner{background:rgba(124,106,255,.1);border-bottom:1px solid rgba(124,106,255,.2);padding:10px 14px;display:none;align-items:center;gap:10px;flex-shrink:0;}
@@ -192,7 +192,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 <!-- ══ LOCK SCREEN ══ -->
 <div id="sLock" class="screen active">
   <div class="topbar">
-    <span class="logo-txt">🔐 VaultKeeper <span class="ver">5.1</span></span>
+    <span class="logo-txt">🔐 VaultKeeper <span class="ver">5.3</span></span>
   </div>
 
   <!-- Install hint when not on HTTPS -->
@@ -203,7 +203,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
   </div>
 
   <div class="lock-body">
-    <div class="big-icon">🔐</div>
+    <div class="big-icon-emoji">🔐</div>
     <div style="width:100%;max-width:400px">
       <div class="field">
         <label>Master Password</label>
@@ -234,7 +234,8 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
     <button class="bb-btn active" id="bbPasswords"><span class="ico">🔐</span>Passwords</button>
     <button class="bb-btn" id="bbGenerator"><span class="ico">🎲</span>Generator</button>
     <button class="bb-btn" id="bbSync"><span class="ico">☁️</span>Sync</button>
-    <button class="bb-btn" id="bbMenu"><span class="ico">⚙️</span>Menu</button>
+    <button class="bb-btn" id="bbSyncNow"><span class="ico">🔄</span>Sync</button>
+    <button class="bb-btn" id="bbMenu"><span class="ico">⚙️</span>Settings</button>
   </div>
 </div>
 
@@ -330,13 +331,13 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 <!-- MENU -->
 <div class="sheet-overlay" id="shMenu">
   <div class="sheet">
-    <div class="sh"><span class="st">⚙️ Menu</span><button class="sx" id="btnCloseMenu">✕</button></div>
+    <div class="sh"><span class="st">⚙️ Settings</span><button class="sx" id="btnCloseMenu">✕</button></div>
     <button class="mitem" id="menuAbout"><span class="ico">📋</span><div><div>Version History</div><div class="msub">What changed in each version</div></div></button>
-    <button class="mitem" id="menuInstall"><span class="ico">📲</span><div><div>How to Install as App</div><div class="msub">GitHub Pages setup — free HTTPS hosting</div></div></button>
-    <button class="mitem" id="menuImportCSV"><span class="ico">📊</span><div><div>Import from CSV</div><div class="msub">Chrome, Bitwarden, 1Password, LastPass…</div></div></button>
+    
+    
     <button class="mitem" id="menuImportVK"><span class="ico">📂</span><div><div>Import VaultKeeper Backup</div><div class="msub">Restore encrypted .vk file</div></div></button>
-    <button class="mitem" id="menuExport"><span class="ico">💾</span><div><div>Export Backup</div><div class="msub">Save encrypted .vk file</div></div></button>
-    <button class="mitem" id="menuChangePw"><span class="ico">🔑</span><div><div>Change Master Password</div></div></button>
+    <button class="mitem" id="menuExport"><span class="ico">📤</span><div><div>Backup .vk</div><div class="msub">Export encrypted VaultKeeper backup</div></div></button>
+    
     <button class="mitem red" id="menuLock"><span class="ico">🔒</span><div><div>Lock Vault</div></div></button>
   </div>
 </div>
@@ -349,7 +350,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 
       <div class="cl-item">
         <div class="cl-ver">
-          <span class="cl-badge">4.1</span>
+          <span class="cl-badge">5.3</span>
           <span class="cl-tag minor">Minor</span>
           <span class="cl-date">Current</span>
         </div>
@@ -560,7 +561,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 
 <script>
 'use strict';
-// VaultKeeper 5.1 — Android PWA
+// VaultKeeper 5.3 — Android PWA
 const STORE_KEY='vk3_vaults', SYNC_KEY='vk6_syncUrl';
 let KEY=null, DB=[], viewingId=null;
 
@@ -1015,6 +1016,15 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   document.getElementById('btnDismissBanner').addEventListener('click',()=>{localStorage.setItem('vk_banner_dismissed','1');document.getElementById('installBanner').classList.remove('on');});
   document.getElementById('inUnlock').addEventListener('keydown',e=>{if(e.key==='Enter')doUnlock();});
+  // FIX 5: Sync refresh button in bottom bar
+  document.getElementById('bbSyncNow')?.addEventListener('click',()=>{
+    document.querySelectorAll('.bb-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('bbSyncNow').classList.add('active');
+    const url=getSyncUrl();
+    if(url){syncBidirectional(url,true);}
+    else{updateSyncUI();openSheet('shSync');}
+    setTimeout(()=>{document.getElementById('bbPasswords').classList.add('active');document.getElementById('bbSyncNow').classList.remove('active');},2000);
+  });
   document.getElementById('btnUnlock').addEventListener('click',doUnlock);
   document.getElementById('eyeUnlock').addEventListener('click',function(){toggleEye('inUnlock',this);});
   document.getElementById('btnGoSync').addEventListener('click',()=>{updateSyncUI();openSheet('shSync');});
@@ -1063,15 +1073,15 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   document.getElementById('btnCloseMenu').addEventListener('click',()=>{closeSheet('shMenu');setTab('bbPasswords');});
   document.getElementById('menuAbout').addEventListener('click',()=>{closeSheet('shMenu');openSheet('shAbout');});
-  document.getElementById('menuInstall').addEventListener('click',()=>{closeSheet('shMenu');openSheet('shInstall');});
+
   document.getElementById('menuImportCSV').addEventListener('click',()=>{closeSheet('shMenu');document.getElementById('impFileCSV').click();});
   document.getElementById('menuImportVK').addEventListener('click',()=>{closeSheet('shMenu');document.getElementById('impFileVK').click();});
   document.getElementById('menuExport').addEventListener('click',()=>{closeSheet('shMenu');doExport();});
-  document.getElementById('menuChangePw').addEventListener('click',doChangePw);
+
   document.getElementById('menuLock').addEventListener('click',doLock);
 
   document.getElementById('btnCloseAbout').addEventListener('click',()=>closeSheet('shAbout'));
-  document.getElementById('btnCloseInstall').addEventListener('click',()=>closeSheet('shInstall'));
+
 
   document.getElementById('btnCloseUpd').addEventListener('click',()=>closeSheet('shUpdate'));
   document.getElementById('btnDoUpdate').addEventListener('click',doUpdatePw);
@@ -1089,10 +1099,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btnDismissUpd').addEventListener('click',()=>closeSheet('shUpdate'));
 
   document.getElementById('impFileVK').addEventListener('change',doImportVK);
-  document.getElementById('impFileCSV').addEventListener('change',doImportCSV);
+
 
   // Close sheets by tapping backdrop
-  ['shAdd','shView','shGen','shSync','shMenu','shAbout','shInstall','shUpdate'].forEach(id=>{
+  ['shAdd','shView','shGen','shSync','shMenu','shAbout','shUpdate'].forEach(id=>{
     document.getElementById(id).addEventListener('click',e=>{if(e.target.id===id){closeSheet(id);setTab('bbPasswords');}});
   });
 
