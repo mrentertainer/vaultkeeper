@@ -870,10 +870,32 @@ async function doSave(){
 }
 
 async function deleteEntry(id){
-  if(!confirm('Delete this entry? Cannot be undone.')) return;
-  DB=DB.filter(e=>e.id!==id);
-  await persistDB(); closeSheet('shView'); renderList();
-  toast('🗑 Deleted.','ok');
+  const existing=DB.find(e=>e.id===id);
+  if(!existing) return;
+  showDeleteConfirm(id, existing.site);
+}
+
+function showDeleteConfirm(id, site){
+  document.getElementById('__vkdelbar__')?.remove();
+  const bar=document.createElement('div');
+  bar.id='__vkdelbar__';
+  bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#1a1a26;border-top:2px solid #ff4f6a;padding:16px;z-index:9999;display:flex;flex-direction:column;gap:12px;font-family:-apple-system,system-ui,sans-serif;padding-bottom:calc(16px + env(safe-area-inset-bottom));';
+  bar.innerHTML=`
+    <div style="font-size:15px;color:#f0eeff;font-weight:700;">🗑 Delete password?</div>
+    <div style="font-size:13px;color:rgba(168,148,255,.8);">${escH(site)} — This cannot be undone.</div>
+    <div style="display:flex;gap:10px;">
+      <button id="__vkdelyes__" style="flex:1;padding:13px;background:#ff4f6a;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Yes, Delete</button>
+      <button id="__vkdelno__"  style="flex:1;padding:13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.6);font-size:15px;cursor:pointer;font-family:inherit;">Cancel</button>
+    </div>`;
+  document.body.appendChild(bar);
+  document.getElementById('__vkdelyes__').addEventListener('click', async()=>{
+    bar.remove();
+    DB=DB.filter(e=>e.id!==id);
+    await persistDB(); closeSheet('shView'); renderList();
+    toast('🗑 Deleted.','ok');
+  });
+  document.getElementById('__vkdelno__').addEventListener('click',()=>bar.remove());
+  setTimeout(()=>bar.remove(),10000);
 }
 
 // ── Update detected ──
