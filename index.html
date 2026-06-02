@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="VaultKeeper">
 <meta name="theme-color" content="#08080f">
-<title>VaultKeeper 5.3</title>
+<title>VaultKeeper 5.5</title>
 
 <!-- Inline PWA Manifest — works when hosted on HTTPS (GitHub Pages) -->
 <link rel="manifest" href="data:application/manifest+json,{
@@ -192,7 +192,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 <!-- ══ LOCK SCREEN ══ -->
 <div id="sLock" class="screen active">
   <div class="topbar">
-    <span class="logo-txt">🔐 VaultKeeper <span class="ver">5.3</span></span>
+    <span class="logo-txt">🔐 VaultKeeper <span class="ver"">5.5</span></span>
   </div>
 
   <!-- Install hint when not on HTTPS -->
@@ -350,7 +350,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 
       <div class="cl-item">
         <div class="cl-ver">
-          <span class="cl-badge">5.3</span>
+          <span class="cl-badge"">5.5</span>
           <span class="cl-tag minor">Minor</span>
           <span class="cl-date">Current</span>
         </div>
@@ -561,7 +561,7 @@ textarea{resize:none;font-size:14px;line-height:1.5;}
 
 <script>
 'use strict';
-// VaultKeeper 5.3 — Android PWA
+// VaultKeeper 5.5 — Android PWA
 const STORE_KEY='vk3_vaults', SYNC_KEY='vk6_syncUrl';
 let KEY=null, DB=[], viewingId=null;
 
@@ -882,7 +882,7 @@ function showDeleteConfirm(id, site){
   bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#1a1a26;border-top:2px solid #ff4f6a;padding:16px;z-index:9999;display:flex;flex-direction:column;gap:12px;font-family:-apple-system,system-ui,sans-serif;padding-bottom:calc(16px + env(safe-area-inset-bottom));';
   bar.innerHTML=`
     <div style="font-size:15px;color:#f0eeff;font-weight:700;">🗑 Delete password?</div>
-    <div style="font-size:13px;color:rgba(168,148,255,.8);">${escH(site)} — This cannot be undone.</div>
+    <div style="font-size:13px;color:rgba(168,148,255,.8);">${esc(site)} — This cannot be undone.</div>
     <div style="display:flex;gap:10px;">
       <button id="__vkdelyes__" style="flex:1;padding:13px;background:#ff4f6a;border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Yes, Delete</button>
       <button id="__vkdelno__"  style="flex:1;padding:13px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:rgba(255,255,255,.6);font-size:15px;cursor:pointer;font-family:inherit;">Cancel</button>
@@ -893,6 +893,7 @@ function showDeleteConfirm(id, site){
     DB=DB.filter(e=>e.id!==id);
     await persistDB(); closeSheet('shView'); renderList();
     toast('🗑 Deleted.','ok');
+    const url=getSyncUrl(); if(url) setTimeout(()=>syncPush(url,false),400);
   });
   document.getElementById('__vkdelno__').addEventListener('click',()=>bar.remove());
   setTimeout(()=>bar.remove(),10000);
@@ -1096,7 +1097,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('btnCloseMenu').addEventListener('click',()=>{closeSheet('shMenu');setTab('bbPasswords');});
   document.getElementById('menuAbout').addEventListener('click',()=>{closeSheet('shMenu');openSheet('shAbout');});
 
-  document.getElementById('menuImportCSV').addEventListener('click',()=>{closeSheet('shMenu');document.getElementById('impFileCSV').click();});
   document.getElementById('menuImportVK').addEventListener('click',()=>{closeSheet('shMenu');document.getElementById('impFileVK').click();});
   document.getElementById('menuExport').addEventListener('click',()=>{closeSheet('shMenu');doExport();});
 
